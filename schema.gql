@@ -12,17 +12,27 @@ type Example {
   creationDate: Date!
 }
 
+"""meme"""
+type Meme {
+  name: String!
+  imageUrl: String
+}
+
 """Date custom scalar type"""
 scalar Date
 
 type Query {
   getExample(id: String!): Example!
   getExamples(skip: Int! = 0, take: Int! = 25): [Example!]!
+  getMeme(id: String!): Meme!
+  getMemes(skip: Int! = 0, take: Int! = 25): [Meme!]!
 }
 
 type Mutation {
   addExample(newExampleData: NewExampleInput!): Example!
   removeExample(id: String!): Boolean!
+  addMeme(newExampleData: NewMemeInput!): Meme!
+  removeMeme(id: String!): Boolean!
 }
 
 input NewExampleInput {
@@ -30,6 +40,12 @@ input NewExampleInput {
   description: String
 }
 
+input NewMemeInput {
+  name: String!
+  imageUrl: String
+}
+
 type Subscription {
   exampleAdded: Example!
+  memeAdded: Meme!
 }
