@@ -3,14 +3,19 @@ import { Module } from '@nestjs/common';
 import { GraphQLModule } from '@nestjs/graphql';
 import { DirectiveLocation, GraphQLDirective } from 'graphql';
 import { upperDirectiveTransformer } from './common/directives/upper-case.directive';
-import { ExampleModule } from './example/example.module';
 import { MemesModule } from './memes/memes.module';
 import { DateScalar } from 'src/common/scalars/data.scalar';
+import { ScheduleModule } from '@nestjs/schedule';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
-    ExampleModule,
+    ScheduleModule.forRoot(),
+    ConfigModule.forRoot({ isGlobal: true }),
     MemesModule,
+
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: 'schema.gql',
@@ -25,6 +30,10 @@ import { DateScalar } from 'src/common/scalars/data.scalar';
         ],
       },
     }),
+
+    AuthModule,
+
+    UsersModule,
   ],
   providers: [DateScalar],
 })

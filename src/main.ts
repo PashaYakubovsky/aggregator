@@ -4,6 +4,7 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
+import { config } from 'dotenv';
 
 async function bootstrap() {
   const adapter = new FastifyAdapter({
@@ -17,6 +18,9 @@ async function bootstrap() {
     preflightContinue: false,
     optionsSuccessStatus: 204,
   });
+
+  // dotenv
+  config();
 
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
