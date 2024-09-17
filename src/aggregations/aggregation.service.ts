@@ -68,11 +68,10 @@ export class AggregationsService {
     try {
       // fetch Aggregations from Reddit API
       // give 15 tries to fetch Aggregations
+      const url = `${process.env.REDIT_API_URL}/ProgrammerHumor.json?${this.pagination}`;
+      console.log(url, 'reddit url');
       for (let i = 0; i < 15; i++) {
-        Aggregations = await fetch(
-          `https://www.reddit.com/r/ProgrammerHumor.json?${this.pagination}`,
-          fetchOpt,
-        );
+        Aggregations = await fetch(url, fetchOpt);
         if (Aggregations.ok) {
           const AggregationsJson = await Aggregations.json();
           this.pagination = `after=${AggregationsJson.data.after}&sort=new`;
