@@ -1,4 +1,4 @@
-export interface Meme {
+export interface Aggregation {
   id: number;
   title: string;
   description?: string;

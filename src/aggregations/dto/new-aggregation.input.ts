@@ -2,7 +2,7 @@ import { Field, InputType } from '@nestjs/graphql';
 import { MaxLength } from 'class-validator';
 
 @InputType()
-export class NewMemeInput {
+export class NewAggregationInput {
   @Field()
   @MaxLength(30)
   name: string;

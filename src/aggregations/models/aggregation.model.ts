@@ -1,7 +1,7 @@
 import { Directive, Field, ObjectType, ID } from '@nestjs/graphql';
 
-@ObjectType({ description: 'meme' })
-export class Meme {
+@ObjectType({ description: 'Aggregated item' })
+export class Aggregation {
   @Field((type) => ID)
   id: string;
 

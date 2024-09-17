@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Get,
   HttpCode,
   HttpStatus,
   Post,
@@ -20,13 +19,27 @@ export class AuthController {
   @Post('login')
   @Public()
   signIn(@Body() signInDto: Record<string, any>) {
-    console.log(process.env.JWT_SECRET);
     return this.authService.signIn(signInDto.username, signInDto.password);
   }
 
+  @HttpCode(HttpStatus.OK)
+  @Post('logout')
   @UseGuards(AuthGuard)
-  @Get('profile')
-  getProfile(@Request() req) {
-    return req.user;
+  logout(@Request() req: Record<string, any>) {
+    return this.authService.logout(req.user);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post('refresh')
+  @UseGuards(AuthGuard)
+  refresh(@Body() refreshDto: Record<string, any>) {
+    return this.authService.refresh(refreshDto.refreshToken);
+  }
+
+  @HttpCode(HttpStatus.CREATED)
+  @Post('signup')
+  @Public()
+  signUp(@Body() signUpDto: Record<string, any>) {
+    return this.authService.signUp(signUpDto);
   }
 }

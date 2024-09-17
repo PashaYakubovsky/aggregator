@@ -4,8 +4,8 @@
 
 directive @upper on FIELD_DEFINITION
 
-"""meme"""
-type Meme {
+"""Aggregated item"""
+type Aggregation {
   id: ID!
   name: String!
   imageUrl: String
@@ -18,20 +18,20 @@ type Meme {
 scalar Date
 
 type Query {
-  getMeme(id: String!): Meme!
-  getMemes(skip: Int! = 0, take: Int! = 25): [Meme!]!
+  getAggregation(id: String!): Aggregation!
+  getAggregations(skip: Int! = 0, take: Int! = 25): [Aggregation!]!
 }
 
 type Mutation {
-  addMeme(newExampleData: NewMemeInput!): Meme!
+  addAggregation(newExampleData: NewAggregationInput!): Aggregation!
   removeMeme(id: String!): Boolean!
 }
 
-input NewMemeInput {
+input NewAggregationInput {
   name: String!
   imageUrl: String
 }
 
 type Subscription {
-  memeAdded: Meme!
+  aggregationAdded: Aggregation!
 }
