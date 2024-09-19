@@ -11,6 +11,8 @@ import { Post } from './interfaces/reddit.interface';
 @Injectable()
 export class AggregationsService {
   private aggregationsRepository: Aggregation[] = [];
+  pagination = `limit=100&sort=new`;
+  token = '';
   private readonly logger = new Logger(AggregationsService.name);
 
   async create(data: NewAggregationInput): Promise<Aggregation> {
@@ -49,16 +51,24 @@ export class AggregationsService {
     return true;
   }
 
-  pagination = `sort=new`;
-  @Cron(CronExpression.EVERY_10_MINUTES)
+  // @Cron(CronExpression.EVERY_10_MINUTES)
+  @Cron(CronExpression.EVERY_MINUTE)
   async aggregateFromReddit(): Promise<Aggregation[]> {
     let aggregations;
+
+    const auth = {
+      username: process.env.REDDIT_APP_ID,
+      password: process.env.REDDIT_APP_SECRET,
+    };
+
     const fetchOpt: RequestInit = {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent':
-          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+        'User-Agent': `${process.env.REDDIT_APP_NAME} by ${process.env.REDDIT_USERNAME}`,
+        Authorization: `Basic ${Buffer.from(
+          `${auth.username}:${auth.password}`,
+        ).toString('base64')}`,
       },
     };
 
