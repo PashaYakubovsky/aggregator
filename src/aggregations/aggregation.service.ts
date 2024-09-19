@@ -53,8 +53,8 @@ export class AggregationsService {
   // @Cron(CronExpression.EVERY_10_MINUTES)
   @Cron(CronExpression.EVERY_MINUTE)
   async aggregateFromReddit(): Promise<Aggregation[]> {
-    let Aggregations;
-    const fetchOpt = {
+    let aggregations;
+    const fetchOpt: RequestInit = {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -66,21 +66,23 @@ export class AggregationsService {
     const dataArr: Post[] = [];
 
     try {
-      // fetch Aggregations from Reddit API
-      // give 15 tries to fetch Aggregations
-      const url = `${process.env.REDIT_API_URL}/ProgrammerHumor.json?${this.pagination}`;
-      console.log(url, 'reddit url');
+      // aggregate posts from Reddit API
+      const url = `${process.env.REDDIT_API_URL}/ProgrammerHumor.json?${this.pagination}`;
+      const wait = (ms: number) =>
+        new Promise((resolve) => setTimeout(resolve, ms));
+
       for (let i = 0; i < 15; i++) {
-        Aggregations = await fetch(url, fetchOpt);
-        if (Aggregations.ok) {
-          const AggregationsJson = await Aggregations.json();
-          this.pagination = `after=${AggregationsJson.data.after}&sort=new`;
-          dataArr.push(...AggregationsJson.data.children.map((d) => d.data));
+        aggregations = await fetch(url, fetchOpt);
+        if (aggregations.ok) {
+          const aggregationsJson = await aggregations.json();
+          this.pagination = `after=${aggregationsJson.data.after}&limit=100&sort=new`;
+          dataArr.push(...aggregationsJson.data.children.map((d) => d.data));
+          break;
         }
+        await wait(1000);
       }
-      // convert readable stream to json
       // extract data from json
-      const AggregationsArray = dataArr.map((d) => {
+      const aggregationsArray = dataArr.map((d) => {
         const lCamelCaseWithSpaces = d.title.replaceAll(/([A-Z])/g, ' $1');
         return {
           name: lCamelCaseWithSpaces,
@@ -93,17 +95,26 @@ export class AggregationsService {
       }) as Aggregation[];
 
       // clean duplicates
-      const uniqueAggregationsArray = AggregationsArray.filter(
-        (Aggregation, index, self) =>
-          index === self.findIndex((m) => m.name === Aggregation.name),
-      );
+      const uniqueAggregationsArray = [
+        ...this.aggregationsRepository,
+        ...aggregationsArray,
+      ].reduce((acc, current) => {
+        const x = acc.find((item) => item.id === current.id);
+        if (!x) {
+          return acc.concat([current]);
+        } else {
+          return acc;
+        }
+      }, [] as Aggregation[]);
 
       // add Aggregations to repository
-      this.aggregationsRepository.push(...uniqueAggregationsArray);
+      this.aggregationsRepository = uniqueAggregationsArray;
 
-      this.logger.log('Aggregations aggregated from Reddit');
+      this.logger.log(
+        `Aggregations aggregated from Reddit: ${this.aggregationsRepository.length} posts`,
+      );
 
-      return AggregationsArray;
+      return aggregationsArray;
     } catch (error) {
       this.logger.error(error.message);
       return [];

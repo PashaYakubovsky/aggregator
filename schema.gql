@@ -24,7 +24,7 @@ type Query {
 
 type Mutation {
   addAggregation(newExampleData: NewAggregationInput!): Aggregation!
-  removeMeme(id: String!): Boolean!
+  removeAggregation(id: String!): Boolean!
 }
 
 input NewAggregationInput {

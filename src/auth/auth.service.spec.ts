@@ -1,18 +1,43 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
+import { UsersService } from '../users/users.service';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
+import { AuthModule } from './auth.module';
+import { AuthController } from './auth.controller';
 
 describe('AuthService', () => {
   let service: AuthService;
+  let app: NestFastifyApplication;
 
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [AuthService],
-    }).compile();
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [AuthModule],
+    })
+      .overrideProvider('JwtService')
+      .useValue({})
+      .compile();
 
-    service = module.get<AuthService>(AuthService);
+    app = moduleRef.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter(),
+    );
+
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+
+    service = moduleRef.get<AuthService>(AuthService);
   });
 
   it('should be defined', () => {
     expect(service).toBeDefined();
+  });
+
+  describe('signIn', () => {
+    it('should return an access token', async () => {
+      const result = await service.signIn('admin', 'admin');
+      expect(result).toHaveProperty('access_token');
+    });
   });
 });

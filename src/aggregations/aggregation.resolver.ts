@@ -10,7 +10,10 @@ const pubSub = new PubSub();
 
 @Resolver((of) => Aggregation)
 export class AggregationResolver {
-  constructor(private readonly aggregationsService: AggregationsService) {}
+  public readonly pubSub: PubSub;
+  constructor(private readonly aggregationsService: AggregationsService) {
+    this.pubSub = pubSub;
+  }
 
   @Query((returns) => Aggregation)
   async getAggregation(@Args('id') id: string): Promise<Aggregation> {
@@ -33,11 +36,13 @@ export class AggregationResolver {
     @Args('newExampleData') newExampleData: NewAggregationInput,
   ): Promise<Aggregation> {
     const recipe = await this.aggregationsService.create(newExampleData);
+    // 💡 We're publishing the new aggregation her
+    pubSub.publish('aggregationAdded', { aggregationAdded: recipe });
     return recipe;
   }
 
   @Mutation((returns) => Boolean)
-  async removeMeme(@Args('id') id: string) {
+  async removeAggregation(@Args('id') id: string) {
     return this.aggregationsService.remove(id);
   }
 
