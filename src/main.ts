@@ -21,14 +21,15 @@ async function bootstrap() {
     allowedOrigins = ['https://aggregator-viewer.vercel.app'];
   }
   adapter.enableCors({
-    origin: (origin, callback) => {
-      const isVercel = origin?.includes('vercel.app');
-      if (allowedOrigins.indexOf(origin) !== -1 || !origin || isVercel) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: '*',
+    // (origin, callback) => {
+    //   const isVercel = origin?.includes('vercel.app');
+    //   if (allowedOrigins.indexOf(origin) !== -1 || !origin || isVercel) {
+    //     callback(null, true);
+    //   } else {
+    //     callback(new Error('Not allowed by CORS'));
+    //   }
+    // },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     preflightContinue: false,
     optionsSuccessStatus: 204,
