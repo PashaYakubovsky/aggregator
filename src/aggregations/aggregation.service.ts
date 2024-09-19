@@ -128,4 +128,11 @@ export class AggregationsService {
       return [];
     }
   }
+
+  // reset pagination after 10 hours
+  @Cron('0 0 0 * * *')
+  async resetPagination(): Promise<void> {
+    this.pagination = `limit=100&sort=new`;
+    this.logger.log('Pagination reset');
+  }
 }
