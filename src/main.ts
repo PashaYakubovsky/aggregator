@@ -41,6 +41,9 @@ async function bootstrap() {
     adapter,
   );
 
-  await app.listen(3000);
+  // fallback to heroku port
+  const port = process.env.PORT || 3000;
+
+  await app.listen(port);
 }
 bootstrap();
