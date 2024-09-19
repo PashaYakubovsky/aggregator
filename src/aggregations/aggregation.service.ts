@@ -52,7 +52,7 @@ export class AggregationsService {
   }
 
   // @Cron(CronExpression.EVERY_10_MINUTES)
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_30_MINUTES)
   async aggregateFromReddit(): Promise<Aggregation[]> {
     let aggregations;
 
@@ -86,7 +86,6 @@ export class AggregationsService {
           const aggregationsJson = await aggregations.json();
           this.pagination = `after=${aggregationsJson.data.after}&limit=100&sort=new`;
           dataArr.push(...aggregationsJson.data.children.map((d) => d.data));
-          break;
         }
         await wait(1000);
       }
