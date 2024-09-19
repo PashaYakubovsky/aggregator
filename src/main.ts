@@ -22,7 +22,8 @@ async function bootstrap() {
   }
   adapter.enableCors({
     origin: (origin, callback) => {
-      if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      const isVercel = origin?.includes('vercel.app');
+      if (allowedOrigins.indexOf(origin) !== -1 || !origin || isVercel) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
