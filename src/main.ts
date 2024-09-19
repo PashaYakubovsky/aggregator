@@ -12,8 +12,22 @@ async function bootstrap() {
   });
 
   // cors
+  const isProduction = process.env.NODE_ENV === 'production';
+  let allowedOrigins = [];
+
+  if (!isProduction) {
+    allowedOrigins = ['http://localhost:5173'];
+  } else {
+    allowedOrigins = ['https://aggregator-viewer.vercel.app'];
+  }
   adapter.enableCors({
-    origin: '*',
+    origin: (origin, callback) => {
+      if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     preflightContinue: false,
     optionsSuccessStatus: 204,

@@ -50,8 +50,7 @@ export class AggregationsService {
   }
 
   pagination = `sort=new`;
-  // @Cron(CronExpression.EVERY_10_MINUTES)
-  @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_10_MINUTES)
   async aggregateFromReddit(): Promise<Aggregation[]> {
     let aggregations;
     const fetchOpt: RequestInit = {
