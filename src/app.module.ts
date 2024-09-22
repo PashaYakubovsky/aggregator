@@ -9,6 +9,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
+import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
 
 @Module({
   imports: [
@@ -18,7 +19,9 @@ import { ConfigModule } from '@nestjs/config';
 
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
-      autoSchemaFile: 'schema.gql',
+      autoSchemaFile: true,
+      playground: false,
+      plugins: [ApolloServerPluginLandingPageLocalDefault()],
       transformSchema: (schema) => upperDirectiveTransformer(schema, 'upper'),
       installSubscriptionHandlers: true,
       buildSchemaOptions: {
@@ -28,6 +31,18 @@ import { ConfigModule } from '@nestjs/config';
             locations: [DirectiveLocation.FIELD_DEFINITION],
           }),
         ],
+      },
+      subscriptions: {
+        'graphql-ws': true,
+        'subscriptions-transport-ws': true,
+      },
+      context: ({ req, res, connection }) => {
+        if (connection) {
+          // For Subscriptions
+          return { req: connection.context, res };
+        }
+        // For Queries and Mutations
+        return { req, res };
       },
     }),
 

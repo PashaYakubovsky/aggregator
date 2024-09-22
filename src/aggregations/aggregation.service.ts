@@ -7,12 +7,14 @@ import { AggregationArgs } from './dto/aggregation.args';
 
 import { v4 as uuidv4 } from 'uuid';
 import { Post } from './interfaces/reddit.interface';
+import { PubSub } from 'graphql-subscriptions';
 
 @Injectable()
 export class AggregationsService {
   private aggregationsRepository: Aggregation[] = [];
   pagination = `limit=100&sort=new`;
   token = '';
+  pubSub: PubSub;
   private readonly logger = new Logger(AggregationsService.name);
 
   async create(data: NewAggregationInput): Promise<Aggregation> {
@@ -51,8 +53,8 @@ export class AggregationsService {
     return true;
   }
 
-  // @Cron(CronExpression.EVERY_10_MINUTES)
-  @Cron(CronExpression.EVERY_30_MINUTES)
+  @Cron(CronExpression.EVERY_MINUTE)
+  // @Cron(CronExpression.EVERY_30_MINUTES)
   async aggregateFromReddit(): Promise<Aggregation[]> {
     let aggregations;
 
@@ -80,7 +82,7 @@ export class AggregationsService {
       const wait = (ms: number) =>
         new Promise((resolve) => setTimeout(resolve, ms));
 
-      for (let i = 0; i < 15; i++) {
+      for (let i = 0; i < 1; i++) {
         aggregations = await fetch(url, fetchOpt);
         if (aggregations.ok) {
           const aggregationsJson = await aggregations.json();
@@ -121,6 +123,15 @@ export class AggregationsService {
       this.logger.log(
         `Aggregations aggregated from Reddit: ${this.aggregationsRepository.length} posts`,
       );
+
+      if (this.pubSub) {
+        this.pubSub.publish('aggregationUpdated', {
+          aggregationUpdated: this.aggregationsRepository,
+        });
+        this.pubSub.publish('aggregationAdded', {
+          aggregationAdded: aggregationsArray,
+        });
+      }
 
       return aggregationsArray;
     } catch (error) {

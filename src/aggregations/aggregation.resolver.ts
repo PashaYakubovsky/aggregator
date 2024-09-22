@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { NotFoundException } from '@nestjs/common';
 import { Args, Mutation, Query, Resolver, Subscription } from '@nestjs/graphql';
 import { PubSub } from 'graphql-subscriptions';
@@ -13,6 +14,7 @@ export class AggregationResolver {
   public readonly pubSub: PubSub;
   constructor(private readonly aggregationsService: AggregationsService) {
     this.pubSub = pubSub;
+    aggregationsService.pubSub = pubSub;
   }
 
   @Query((returns) => Aggregation)
@@ -49,5 +51,10 @@ export class AggregationResolver {
   @Subscription((returns) => Aggregation)
   aggregationAdded() {
     return pubSub.asyncIterator('aggregationAdded');
+  }
+
+  @Subscription((returns) => Aggregation)
+  aggregationUpdated() {
+    return pubSub.asyncIterator('aggregationUpdated');
   }
 }

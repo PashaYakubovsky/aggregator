@@ -34,4 +34,5 @@ input NewAggregationInput {
 
 type Subscription {
   aggregationAdded: Aggregation!
+  aggregationUpdated: Aggregation!
 }
