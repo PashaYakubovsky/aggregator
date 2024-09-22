@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import {
@@ -6,7 +6,6 @@ import {
   NestFastifyApplication,
 } from '@nestjs/platform-fastify';
 import { AuthModule } from './auth.module';
-import { AuthController } from './auth.controller';
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -15,6 +14,7 @@ describe('AuthService', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AuthModule],
+      providers: [AuthService, UsersService],
     })
       .overrideProvider('JwtService')
       .useValue({})
