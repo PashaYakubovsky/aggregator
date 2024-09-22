@@ -1,4 +1,4 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Test } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { UsersService } from 'src/users/users.service';
@@ -15,6 +15,7 @@ describe('AuthController', () => {
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AuthModule],
+      providers: [AuthService, UsersService],
     })
       .overrideProvider('JwtService')
       .useValue({})
