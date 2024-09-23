@@ -20,4 +20,7 @@ export class Aggregation {
 
   @Field({ nullable: true })
   type: string;
+
+  @Field({ nullable: true })
+  createdAtTime: number;
 }

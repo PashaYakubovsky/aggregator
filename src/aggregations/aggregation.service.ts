@@ -100,6 +100,7 @@ export class AggregationsService {
           type: d.post_hint,
           id: d.id,
           createdAt: new Date(d.created),
+          createdAtTime: d.created,
           from: 'Reddit',
         };
       }) as Aggregation[];
