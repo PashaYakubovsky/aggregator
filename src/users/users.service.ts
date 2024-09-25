@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { v4 } from 'uuid';
+import { hashPassword } from 'src/common/helpers/hash';
 
 // This should be a real class/interface representing a user entity
 export type User = {
   userId: string;
   username: string;
-  password: string;
+  passwordHash: string;
 };
 
 export type CreateUserDto = {
@@ -17,11 +18,11 @@ export type CreateUserDto = {
 @Injectable()
 export class UsersService {
   constructor(private jwtService: JwtService) {}
-  private readonly users = [
+  private readonly users: User[] = [
     {
       userId: '1',
       username: 'admin',
-      password: 'admin',
+      passwordHash: '',
     },
   ];
 
@@ -40,9 +41,18 @@ export class UsersService {
 
     // create user
     const user: User = {
+      username: userDto.username,
       userId: v4(),
-      ...userDto,
+      passwordHash: '',
     };
+    try {
+      const hash = await hashPassword(userDto.password);
+      user.passwordHash = hash;
+    } catch (err) {
+      console.error('Error hashing password:', err);
+      throw err;
+    }
+
     this.users.push(user);
 
     const access_token = await this.jwtService.signAsync(user, {
