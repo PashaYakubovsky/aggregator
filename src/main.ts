@@ -16,7 +16,7 @@ async function bootstrap() {
   let allowedOrigins = [];
 
   if (!isProduction) {
-    allowedOrigins = ['http://localhost:5173'];
+    allowedOrigins = ['http://localhost:5173', 'http://localhost:4173'];
   } else {
     allowedOrigins = ['https://aggregator-viewer.vercel.app'];
   }

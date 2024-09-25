@@ -10,6 +10,7 @@ import {
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 import { Public } from '../common/decorators/auth.decorator';
+import { CreateUserDto } from 'src/users/users.service';
 
 @Controller('auth')
 export class AuthController {
@@ -39,7 +40,7 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   @Post('signup')
   @Public()
-  signUp(@Body() signUpDto: Record<string, any>) {
+  signUp(@Body() signUpDto: CreateUserDto) {
     return this.authService.signUp(signUpDto);
   }
 }
