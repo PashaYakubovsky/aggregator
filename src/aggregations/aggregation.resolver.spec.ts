@@ -124,7 +124,6 @@ describe('AggregationResolver', () => {
       resolver.pubSub.subscribe(
         'aggregationAdded',
         jest.fn((data: { aggregationAdded: Aggregation }) => {
-          debugger;
           expect(data.aggregationAdded).toBe(result);
         }),
       );
