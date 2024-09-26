@@ -53,8 +53,8 @@ export class AggregationsService {
     return true;
   }
 
-  @Cron(CronExpression.EVERY_MINUTE)
-  // @Cron(CronExpression.EVERY_30_MINUTES)
+  // @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_30_MINUTES)
   async aggregateFromReddit(): Promise<Aggregation[]> {
     let aggregations;
 
@@ -82,7 +82,7 @@ export class AggregationsService {
       const wait = (ms: number) =>
         new Promise((resolve) => setTimeout(resolve, ms));
 
-      for (let i = 0; i < 1; i++) {
+      for (let i = 0; i < 10; i++) {
         aggregations = await fetch(url, fetchOpt);
         if (aggregations.ok) {
           const aggregationsJson = await aggregations.json();
