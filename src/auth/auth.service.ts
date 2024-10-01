@@ -1,7 +1,10 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { CreateUserDto, User, UsersService } from '../users/users.service';
+import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import { compare } from 'bcrypt';
+import { User } from 'src/users/models/user.model';
+import { CreateUserDto } from 'src/users/dto/user.dto';
+import { Public } from 'src/common/decorators/auth.decorator';
 
 @Injectable()
 export class AuthService {
@@ -10,16 +13,17 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  @Public()
   async signIn(
     username: string,
     pass: string,
   ): Promise<{ access_token: string }> {
+    console.log('username', username, 'pass', pass);
     const user = await this.usersService.findOne(username);
 
     // check if user is admin
     if (username === 'admin' && pass === 'admin') {
-      const payload = { sub: 'admin', username: 'admin' };
-      const access_token = await this.jwtService.signAsync(payload, {
+      const access_token = await this.jwtService.signAsync(user, {
         expiresIn: '1h',
       });
 
@@ -42,8 +46,7 @@ export class AuthService {
       throw new UnauthorizedException();
     }
 
-    const payload = { sub: user.userId, username: user.username };
-    const access_token = await this.jwtService.signAsync(payload, {
+    const access_token = await this.jwtService.signAsync(user, {
       expiresIn: '1h',
     });
 
@@ -65,6 +68,7 @@ export class AuthService {
     return 'logout';
   }
 
+  @Public()
   async signUp(
     signUpDto: CreateUserDto,
   ): Promise<{ user: User; access_token: string }> {

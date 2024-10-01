@@ -1,3 +1,4 @@
+// import { UsersService } from './../users/users.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { Aggregation } from './models/aggregation.model';
 import { Cron, CronExpression } from '@nestjs/schedule';
@@ -8,14 +9,21 @@ import { AggregationArgs } from './dto/aggregation.args';
 import { v4 as uuidv4 } from 'uuid';
 import { Post } from './interfaces/reddit.interface';
 import { PubSub } from 'graphql-subscriptions';
+import { UsersService } from 'src/users/users.service';
+import AggregationsRepository from './repositories/aggregation.repository';
 
 @Injectable()
 export class AggregationsService {
-  private aggregationsRepository: Aggregation[] = [];
   pagination = `limit=100&sort=new`;
   token = '';
   pubSub: PubSub;
+  subRedditsToAggregate: Record<string, string[]> = {};
+  aggregationsRepository: AggregationsRepository;
   private readonly logger = new Logger(AggregationsService.name);
+
+  constructor(private usersService: UsersService) {
+    this.aggregationsRepository = new AggregationsRepository();
+  }
 
   async create(data: NewAggregationInput): Promise<Aggregation> {
     const aggregation = new Aggregation();
@@ -23,39 +31,48 @@ export class AggregationsService {
     aggregation.imageUrl = data.imageUrl;
     aggregation.id = uuidv4();
 
-    this.aggregationsRepository.push(aggregation);
+    this.aggregationsRepository.save(aggregation);
 
     return aggregation;
   }
 
   async findOneById(id: string): Promise<Aggregation> {
-    return this.aggregationsRepository.find(
-      (Aggregations) => Aggregations.id === id,
-    );
+    return await this.aggregationsRepository.findOne(id);
   }
 
   async findAll({ skip, take }: AggregationArgs): Promise<Aggregation[]> {
-    const data = this.aggregationsRepository.slice(skip, skip + take);
-    return data;
+    const data = await this.aggregationsRepository.find();
+    return data.slice(skip, take);
   }
 
   async remove(id: string): Promise<boolean> {
-    if (
-      !this.aggregationsRepository.find(
-        (Aggregations) => Aggregations.id === id,
-      )
-    ) {
+    const aggregation = await this.aggregationsRepository.findOne(id);
+    if (!aggregation) {
       return false;
     }
-    this.aggregationsRepository = this.aggregationsRepository.filter(
-      (Aggregations) => Aggregations.id !== id,
-    );
+
+    await this.aggregationsRepository.delete(id);
+
     return true;
   }
 
-  // @Cron(CronExpression.EVERY_MINUTE)
-  @Cron(CronExpression.EVERY_30_MINUTES)
+  @Cron(CronExpression.EVERY_MINUTE)
+  // @Cron(CronExpression.EVERY_30_MINUTES)
   async aggregateFromReddit(): Promise<Aggregation[]> {
+    const users = await this.usersService.findAll();
+    let uniqueSubreddits = new Set<string>();
+
+    // get subreddits to aggregate from users
+    for (const user of users) {
+      this.subRedditsToAggregate[user.username] = user.subscribedTopics;
+      user.subscribedTopics.forEach((topic) => uniqueSubreddits.add(topic));
+    }
+
+    if (uniqueSubreddits.size > 25) {
+      // slice the set to 25 unique subreddits
+      uniqueSubreddits = new Set([...uniqueSubreddits].slice(0, 25));
+    }
+
     let aggregations;
 
     const auth = {
@@ -74,77 +91,77 @@ export class AggregationsService {
       },
     };
 
-    const dataArr: Post[] = [];
+    const dataArr: Aggregation[] = [];
 
     try {
       // aggregate posts from Reddit API
-      const url = `${process.env.REDDIT_API_URL}/ProgrammerHumor.json?${this.pagination}`;
       const wait = (ms: number) =>
         new Promise((resolve) => setTimeout(resolve, ms));
 
-      for (let i = 0; i < 10; i++) {
-        aggregations = await fetch(url, fetchOpt);
+      for (const subReddit of uniqueSubreddits) {
+        aggregations = await fetch(
+          `${process.env.REDDIT_API_URL}/${subReddit}.json?limit=100&sort=new`,
+          fetchOpt,
+        );
         if (aggregations.ok) {
-          const aggregationsJson = await aggregations.json();
-          this.pagination = `after=${aggregationsJson.data.after}&limit=100&sort=new`;
-          dataArr.push(...aggregationsJson.data.children.map((d) => d.data));
+          const aggregationsJson = (await aggregations.json()) as {
+            data: {
+              children: {
+                data: Post;
+              }[];
+              after: string;
+            };
+          };
+
+          dataArr.push(
+            ...aggregationsJson.data.children.map((d) => {
+              const post = d.data as Post;
+              const lCamelCaseWithSpaces = post.title.replaceAll(
+                /([A-Z])/g,
+                ' $1',
+              );
+              let htmlText = '';
+              if (post?.selftext_html) {
+                htmlText = post?.selftext_html;
+              }
+              return {
+                ...post,
+                name: lCamelCaseWithSpaces,
+                imageUrl: post.post_hint === 'image' ? post.url : '',
+                type: post.post_hint,
+                id: post.id,
+                createdAt: new Date(post.created * 1000),
+                createdAtTime: post.created,
+                from: 'Reddit',
+                selftext: post.selftext,
+                selftextHtml: htmlText,
+                subreddit: post.subreddit,
+                permalink: post.permalink,
+              } as Aggregation;
+            }),
+          );
         }
         await wait(1000);
       }
-      // extract data from json
-      const aggregationsArray = dataArr.map((d) => {
-        const lCamelCaseWithSpaces = d.title.replaceAll(/([A-Z])/g, ' $1');
-        return {
-          name: lCamelCaseWithSpaces,
-          imageUrl: d.url,
-          type: d.post_hint,
-          id: d.id,
-          createdAt: new Date(d.created),
-          createdAtTime: d.created,
-          from: 'Reddit',
-        };
-      }) as Aggregation[];
 
-      // clean duplicates
-      const uniqueAggregationsArray = [
-        ...this.aggregationsRepository,
-        ...aggregationsArray,
-      ].reduce((acc, current) => {
-        const x = acc.find((item) => item.id === current.id);
-        if (!x) {
-          return acc.concat([current]);
-        } else {
-          return acc;
-        }
-      }, [] as Aggregation[]);
-
-      // add Aggregations to repository
-      this.aggregationsRepository = uniqueAggregationsArray;
+      // Massive update for the aggregations repository
+      this.aggregationsRepository.save(dataArr);
+      const allData = await this.aggregationsRepository.find();
 
       this.logger.log(
-        `Aggregations aggregated from Reddit: ${this.aggregationsRepository.length} posts`,
+        `Aggregations aggregated from Reddit: ${allData.length} posts`,
       );
 
       if (this.pubSub) {
         this.pubSub.publish('aggregationUpdated', {
           aggregationUpdated: this.aggregationsRepository,
         });
-        this.pubSub.publish('aggregationAdded', {
-          aggregationAdded: aggregationsArray,
-        });
       }
 
-      return aggregationsArray;
+      return allData;
     } catch (error) {
       this.logger.error(error.message);
       return [];
     }
-  }
-
-  // reset pagination after 10 hours
-  @Cron('0 0 0 * * *')
-  async resetPagination(): Promise<void> {
-    this.pagination = `limit=100&sort=new`;
-    this.logger.log('Pagination reset');
   }
 }

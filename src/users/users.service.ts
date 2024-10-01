@@ -2,39 +2,40 @@ import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { v4 } from 'uuid';
 import { hashPassword } from 'src/common/helpers/hash';
-
-// This should be a real class/interface representing a user entity
-export type User = {
-  userId: string;
-  username: string;
-  passwordHash: string;
-};
-
-export type CreateUserDto = {
-  username: string;
-  password: string;
-};
+import { User } from './models/user.model';
+import { CreateUserDto } from './dto/user.dto';
+import { UpdateUserInput } from './dto/upate-user.input';
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private jwtService: JwtService) {}
-  private readonly users: User[] = [
-    {
-      userId: '1',
-      username: 'admin',
-      passwordHash: '',
-    },
+  defaultTopics = [
+    'r/ProgrammerHumor',
+    'r/aww',
+    'r/AskReddit',
+    'r/todayilearned',
   ];
+  constructor(
+    private jwtService: JwtService,
+    private redisService: RedisService,
+  ) {}
 
   async findOne(username: string): Promise<User | undefined> {
-    return this.users.find((user) => user.username === username);
+    const user = await this.redisService.getFromCollection<User>(
+      'users',
+      username,
+    );
+
+    return user;
   }
 
   async create(
     userDto: CreateUserDto,
   ): Promise<{ user: User; access_token: string }> {
     // check duplicate
-    const isDuplicate = this.users.some((u) => u.username === userDto.username);
+    const users = await this.redisService.hGetAll<User>('users');
+    const usersArr = Object.values(users);
+    const isDuplicate = usersArr.some((u) => u.username === userDto.username);
     if (isDuplicate) {
       throw new Error('Duplicate username');
     }
@@ -42,8 +43,9 @@ export class UsersService {
     // create user
     const user: User = {
       username: userDto.username,
-      userId: v4(),
+      id: v4(),
       passwordHash: '',
+      subscribedTopics: this.defaultTopics,
     };
     try {
       const hash = await hashPassword(userDto.password);
@@ -53,7 +55,8 @@ export class UsersService {
       throw err;
     }
 
-    this.users.push(user);
+    // save user
+    await this.redisService.set<User>('users', user.username, user);
 
     const access_token = await this.jwtService.signAsync(user, {
       expiresIn: '1h',
@@ -64,5 +67,43 @@ export class UsersService {
       user,
       access_token,
     };
+  }
+
+  async updateUser(input: UpdateUserInput): Promise<User> {
+    const user = await this.findOneById(input.userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    user.username = input.name;
+    return user;
+  }
+
+  async findOneById(userId: string): Promise<User | undefined> {
+    const user = await this.redisService.getFromCollection<User>(
+      'users',
+      userId,
+    );
+
+    if (user) {
+      const adminUser = await this.findOne('admin');
+      // set default subscribed topics
+      user.subscribedTopics =
+        user.subscribedTopics.length === 0
+          ? adminUser.subscribedTopics || []
+          : user.subscribedTopics;
+    }
+
+    return user;
+  }
+
+  async findAll(): Promise<User[]> {
+    // return this.users;
+    const users = await this.redisService.hGetAll<User>('users');
+    return Object.values(users);
+  }
+
+  async remove(userId: string): Promise<boolean> {
+    const del = await this.redisService.deleteFromCollection('users', userId);
+    return del;
   }
 }

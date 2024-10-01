@@ -10,13 +10,17 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from '@nestjs/config';
 import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin/landingPage/default';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
+    JwtModule.register({
+      global: true,
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '1000s' },
+    }),
     ScheduleModule.forRoot(),
     ConfigModule.forRoot({ isGlobal: true }),
-    AggregationModule,
-
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: true,
@@ -45,10 +49,9 @@ import { ApolloServerPluginLandingPageLocalDefault } from '@apollo/server/plugin
         return { req, res };
       },
     }),
-
     AuthModule,
-
     UsersModule,
+    AggregationModule,
   ],
   providers: [DateScalar],
 })

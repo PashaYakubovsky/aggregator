@@ -80,7 +80,7 @@ export interface Post {
   author_flair_type: string;
   domain: string;
   allow_live_comments: boolean;
-  selftext_html: null;
+  selftext_html: string | null;
   likes: null;
   suggested_sort: null;
   banned_at_utc: null;

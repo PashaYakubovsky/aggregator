@@ -10,7 +10,7 @@ import {
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 import { Public } from '../common/decorators/auth.decorator';
-import { CreateUserDto } from 'src/users/users.service';
+import { CreateUserDto } from 'src/users/dto/user.dto';
 
 @Controller('auth')
 export class AuthController {

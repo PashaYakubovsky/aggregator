@@ -22,5 +22,17 @@ export class Aggregation {
   type: string;
 
   @Field({ nullable: true })
+  selftextHtml: string;
+
+  @Field({ nullable: true })
+  selftext: string;
+
+  @Field({ nullable: true })
   createdAtTime: number;
+
+  @Field({ nullable: true })
+  subreddit: string;
+
+  @Field({ nullable: true })
+  permalink: string;
 }
