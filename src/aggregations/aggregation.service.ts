@@ -40,8 +40,22 @@ export class AggregationsService {
     return await this.aggregationsRepository.findOne(id);
   }
 
-  async findAll({ skip, take }: AggregationArgs): Promise<Aggregation[]> {
-    const data = await this.aggregationsRepository.find();
+  async findAll({
+    skip,
+    take,
+    filter = [],
+  }: AggregationArgs): Promise<Aggregation[]> {
+    let data = await this.aggregationsRepository.find();
+    if (filter.length > 0) {
+      // Create the regular expression from the filter array
+      const filteredData = data.filter((d) => {
+        if (filter.some((f) => `r/${d.subreddit}`.includes(f))) {
+          return d;
+        }
+      });
+
+      data = filteredData;
+    }
     return data.slice(skip, take);
   }
 
@@ -56,8 +70,8 @@ export class AggregationsService {
     return true;
   }
 
-  @Cron(CronExpression.EVERY_MINUTE)
-  // @Cron(CronExpression.EVERY_30_MINUTES)
+  // @Cron(CronExpression.EVERY_MINUTE)
+  @Cron(CronExpression.EVERY_HOUR)
   async aggregateFromReddit(): Promise<Aggregation[]> {
     const users = await this.usersService.findAll();
     let uniqueSubreddits = new Set<string>();
@@ -125,9 +139,8 @@ export class AggregationsService {
                 htmlText = post?.selftext_html;
               }
               return {
-                ...post,
                 name: lCamelCaseWithSpaces,
-                imageUrl: post.post_hint === 'image' ? post.url : '',
+                imageUrl: post.url,
                 type: post.post_hint,
                 id: post.id,
                 createdAt: new Date(post.created * 1000),

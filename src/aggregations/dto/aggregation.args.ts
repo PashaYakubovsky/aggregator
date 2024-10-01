@@ -11,4 +11,7 @@ export class AggregationArgs {
   @Min(1)
   @Max(50)
   take = 25;
+
+  @Field((type) => [String], { nullable: true })
+  filter: string[];
 }

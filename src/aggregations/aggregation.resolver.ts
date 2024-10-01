@@ -27,17 +27,15 @@ export class AggregationResolver {
   }
 
   @Query((returns) => [Aggregation])
-  getAggregations(
-    @Args() ExampleArgs: AggregationArgs,
-  ): Promise<Aggregation[]> {
-    return this.aggregationsService.findAll(ExampleArgs);
+  getAggregations(@Args() args: AggregationArgs): Promise<Aggregation[]> {
+    return this.aggregationsService.findAll(args);
   }
 
   @Mutation((returns) => Aggregation)
   async addAggregation(
-    @Args('newExampleData') newExampleData: NewAggregationInput,
+    @Args('input') input: NewAggregationInput,
   ): Promise<Aggregation> {
-    const recipe = await this.aggregationsService.create(newExampleData);
+    const recipe = await this.aggregationsService.create(input);
     // 💡 We're publishing the new aggregation her
     pubSub.publish('aggregationAdded', { aggregationAdded: recipe });
     return recipe;
