@@ -20,3 +20,10 @@ primary_region = 'otp'
   memory = '1gb'
   cpu_kind = 'shared'
   cpus = 1
+
+[redis]
+  name = 'aggregator-green-star-582-redis'
+  org = 'personal'
+  region = 'otp'
+  disable_eviction = true
+  no_replicas = true
